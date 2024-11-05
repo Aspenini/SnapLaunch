@@ -1,0 +1,12 @@
+# Node modules
+node_modules/
+
+# Distribution folder
+dist/
+
+# Optional npm-debug.log file from errors
+npm-debug.log*
+
+# Logs
+logs
+*.log

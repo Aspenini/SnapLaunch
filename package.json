@@ -1,0 +1,42 @@
+{
+  "name": "snaplaunch",
+  "version": "1.0.0",
+  "description": "A simple, single-page app launcher to open .exe files quickly and close immediately after launch.",
+  "main": "main.js",
+  "author": "Your Name",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win --config.win.sign=false --config.nsis.differentialPackage=false",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.yourname.snaplaunch",
+    "productName": "SnapLaunch",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": ["nsis", "zip"],
+      "sign": false
+    },
+    "mac": {
+      "target": ["dmg", "zip"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Utility"
+    },
+    "nsis": {
+      "differentialPackage": false
+    }
+  }
+}

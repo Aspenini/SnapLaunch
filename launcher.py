@@ -1,9 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog, Menu
-from PIL import Image, ImageTk  # Use Pillow for better image compatibility
+from PIL import Image, ImageTk
 import json
 import os
-import shutil  # For copying artwork
+import shutil
 import subprocess
 import platform
 
@@ -108,7 +108,10 @@ def add_game():
             "name": os.path.basename(game_path),
             "path": game_path,
             "artwork": "",
-            "metadata": {}
+            "metadata": {
+                "release_date": "",
+                "description": ""
+            }
         }
         data["games"].append(new_game)
 
@@ -120,14 +123,68 @@ def add_game():
 
 # Function to show an options menu for each game
 def show_options_menu(game):
-    # Create a pop-up window for options
     options_window = tk.Toplevel(root)
     options_window.title("Options")
-    options_window.geometry("200x100")
+    options_window.geometry("250x200")
 
     # Add artwork option
     add_artwork_button = tk.Button(options_window, text="Add Artwork", command=lambda: add_artwork(game))
-    add_artwork_button.pack(pady=10)
+    add_artwork_button.pack(pady=5)
+
+    # Edit Details option
+    edit_details_button = tk.Button(options_window, text="Edit Details", command=lambda: edit_game_details(game))
+    edit_details_button.pack(pady=5)
+
+# Function to edit game details in a single window
+def edit_game_details(game):
+    edit_window = tk.Toplevel(root)
+    edit_window.title("Edit Game Details")
+    edit_window.geometry("300x250")
+
+    # Name field
+    tk.Label(edit_window, text="Name:").pack(anchor="w", padx=10)
+    name_entry = tk.Entry(edit_window, width=30)
+    name_entry.insert(0, game["name"])
+    name_entry.pack(padx=10, pady=5)
+
+    # Release Date field
+    tk.Label(edit_window, text="Release Date:").pack(anchor="w", padx=10)
+    release_date_entry = tk.Entry(edit_window, width=30)
+    release_date_entry.insert(0, game["metadata"].get("release_date", ""))
+    release_date_entry.pack(padx=10, pady=5)
+
+    # Description field
+    tk.Label(edit_window, text="Description:").pack(anchor="w", padx=10)
+    description_text = tk.Text(edit_window, width=30, height=4)
+    description_text.insert("1.0", game["metadata"].get("description", ""))
+    description_text.pack(padx=10, pady=5)
+
+    # Save button
+    save_button = tk.Button(edit_window, text="Save", command=lambda: save_game_details(game, name_entry.get(), release_date_entry.get(), description_text.get("1.0", "end-1c"), edit_window))
+    save_button.pack(pady=10)
+
+# Function to save edited game details
+def save_game_details(game, new_name, new_release_date, new_description, edit_window):
+    # Update game details
+    game["name"] = new_name
+    game["metadata"]["release_date"] = new_release_date
+    game["metadata"]["description"] = new_description
+
+    # Save the updated details to JSON
+    with open("games.json", "r") as file:
+        data = json.load(file)
+    
+    for g in data["games"]:
+        if g["name"] == game["name"]:
+            g.update(game)
+            break
+    
+    with open("games.json", "w") as file:
+        json.dump(data, file, indent=4)
+
+    print(f"Details updated for game '{game['name']}'")
+    edit_window.destroy()  # Close the edit window
+    load_games()  # Refresh to display the updated name
 
 # Function to add artwork to a game
 def add_artwork(game):
@@ -137,18 +194,15 @@ def add_artwork(game):
     )
     
     if artwork_path:
-        # Copy the artwork to the "artwork" folder
         artwork_filename = os.path.basename(artwork_path)
         new_artwork_path = os.path.join("artwork", artwork_filename)
         
         try:
-            # Verify and copy the image
             img = Image.open(artwork_path)
             img.verify()  # Verify the image is intact
             shutil.copy(artwork_path, new_artwork_path)
             game["artwork"] = new_artwork_path
             
-            # Update the JSON file with the new artwork path
             with open("games.json", "r") as file:
                 data = json.load(file)
             

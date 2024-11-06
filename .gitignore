@@ -1,5 +1,2 @@
-# Exclude the artwork folder
 artwork/
-
-# Exclude the games.json file
 games.json

@@ -1,31 +1,31 @@
 # SnapLaunch
 
-**SnapLaunch** is a cross-platform application and game launcher designed for Windows and Linux, with potential macOS support in the future. It allows users to easily manage, organize, and launch their favorite applications and games, complete with custom artwork and metadata.
+**SnapLaunch** is a cross-platform application and game launcher for organizing and launching your favorite apps and games with ease.
 
 ## Features
 
-- **Cross-Platform**: Supports Windows and Linux (macOS support planned).
-- **Add Custom Artwork**: Import custom artwork for each game/app, ensuring it has a 1x1 aspect ratio.
-- **View and Edit Metadata**: Manage metadata for each app, including name, release date, and description.
-- **Grid Layout**: Apps are displayed in a responsive grid layout for easy access and organization.
-- **Single Executable**: Built as a single executable file, with all dependencies bundled in.
+- **Cross-Platform Support**: Designed for Windows and Linux (macOS support planned).
+- **Add Custom Artwork**: Import custom artwork for each game/app with an easy right-click menu. Ensures artwork has a 1x1 (square) aspect ratio.
+- **View and Edit Metadata**: Manage details for each app, including name, release date, and description.
+- **Responsive Grid Layout**: Displays apps in a flexible grid layout for easy access.
+- **Standalone Executable**: Runs as a single executable file with no dependencies required.
 
-## Installation
+## Usage
 
-### Requirements
+1. **Add a Game/App**:
+   - Click the "Add Game" button and select the executable file for the app or game you want to add.
 
-- **Python 3.8 or higher**
-- **PyInstaller** (for creating the executable)
-  
-If you want to build the executable yourself, follow the steps below.
+2. **Add Artwork**:
+   - Right-click on an app tile, choose "Add Artwork," and select a square image file to set as artwork.
 
-### Building SnapLaunch
+3. **View/Edit Details**:
+   - Right-click on an app tile and select "View/Edit Details" to update the name, release date, and description.
 
-1. Clone this repository:
+## Configuration
 
-   ```bash
-   git clone https://github.com/yourusername/SnapLaunch.git
-   ```
-   ```
-   cd SnapLaunch
-   ```
+- **Artwork** is stored in the `artwork` folder in the application directory.
+- **Metadata** is saved in `games.json` in the application directory, which keeps track of game paths, artwork, and details.
+
+## License
+
+This project is licensed under the MIT License.

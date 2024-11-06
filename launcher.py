@@ -14,16 +14,20 @@ if not os.path.exists("artwork"):
 # Create the main window
 root = tk.Tk()
 root.title("Game Launcher")
-root.geometry("300x300")
+root.geometry("400x400")
 
-# Frame to hold game buttons
-games_frame = tk.Frame(root)
-games_frame.pack(pady=10)
+# Main frame that will change content based on selection
+content_frame = tk.Frame(root)
+content_frame.pack(fill="both", expand=True)
+
+# Utility function to format the artwork filename based on game name
+def format_artwork_filename(game_name, extension):
+    return game_name.replace(" ", "_").lower() + extension
 
 # Load games from JSON and display them as buttons with artwork if available
 def load_games():
-    # Clear existing buttons
-    for widget in games_frame.winfo_children():
+    # Clear existing content
+    for widget in content_frame.winfo_children():
         widget.destroy()
 
     # Load games from JSON
@@ -45,57 +49,198 @@ def load_games():
             json.dump(data, file, indent=4)
         games = data["games"]
 
-    # Create a button for each game
+    # Ensure artwork filenames match game names
+    for game in games:
+        if "artwork" in game and game["artwork"]:
+            correct_name = format_artwork_filename(game["name"], os.path.splitext(game["artwork"])[1])
+            correct_path = os.path.join("artwork", correct_name)
+            if os.path.basename(game["artwork"]) != correct_name:
+                # Rename artwork to match the game name
+                os.rename(game["artwork"], correct_path)
+                game["artwork"] = correct_path
+                with open("games.json", "w") as file:
+                    json.dump({"games": games}, file, indent=4)
+                print(f"Renamed artwork for '{game['name']}' to match game name.")
+
+    # Create a button for each game with left-click to launch and right-click for options
     for game in games:
         artwork_path = game.get("artwork")
         
         # Display the game button with artwork if available
         if artwork_path and os.path.exists(artwork_path):
             img = Image.open(artwork_path)
-            img.thumbnail((100, 100))  # Resize image to fit button
+            img.thumbnail((100, 100))
             img = ImageTk.PhotoImage(img)
-            game_button = tk.Button(games_frame, image=img, command=lambda path=game["path"]: launch_game(path))
+            game_button = tk.Label(content_frame, image=img)
             game_button.image = img  # Keep a reference to prevent garbage collection
         else:
-            game_button = tk.Button(games_frame, text=game["name"], command=lambda path=game["path"]: launch_game(path))
-        
-        game_button.pack(side=tk.LEFT, pady=5, padx=5)
-        
-        # Add an "Options" button for each game for additional actions
-        options_button = tk.Button(games_frame, text="...", command=lambda g=game: show_options_menu(g))
-        options_button.pack(side=tk.LEFT, pady=5)
+            game_button = tk.Label(content_frame, text=game["name"])
+
+        game_button.pack(pady=5, padx=5, fill="x")
+
+        # Bind left-click to launch game
+        game_button.bind("<Button-1>", lambda event, path=game["path"]: launch_game(path))
+
+        # Bind right-click to show options
+        game_button.bind("<Button-3>", lambda event, g=game: show_options_menu(event, g))
+
+    # Add the "Add Game" button at the bottom of the window
+    add_game_button = tk.Button(content_frame, text="Add Game", command=add_game)
+    add_game_button.pack(pady=20)
 
 # Function to launch the game
 def launch_game(path):
     try:
-        # Detect the operating system
         system = platform.system()
         
         if system == "Darwin" and path.endswith(".app"):
-            # macOS-specific launch for .app bundles
             subprocess.Popen(["open", "-a", path])
         else:
-            # General case for other executables
             subprocess.Popen(path, shell=True)
         
-        root.quit()  # Close the launcher
+        root.quit()  # Close the launcher after launching the game
         print(f"Launching game at {path}")
     except Exception as e:
         print(f"Failed to launch game at {path}: {e}")
 
-# Function to handle game import
-def add_game():
-    system = platform.system()
-    if system == "Windows":
-        filetypes = [("Executable files", "*.exe"), ("All files", "*.*")]
-    elif system == "Darwin":
-        filetypes = [("Application files", "*.app"), ("All files", "*.*")]
-    elif system == "Linux":
-        filetypes = [("Executable files", "*.AppImage"), ("All files", "*.*")]
-    else:
-        filetypes = [("All files", "*.*")]
+# Show options menu on right-click
+def show_options_menu(event, game):
+    # Create a right-click menu with options
+    menu = Menu(root, tearoff=0)
+    menu.add_command(label="Add Artwork", command=lambda: add_artwork(game))
+    menu.add_command(label="View/Edit Details", command=lambda: show_game_details(game))
+    menu.tk_popup(event.x_root, event.y_root)
 
-    game_path = filedialog.askopenfilename(title="Select Game Executable", filetypes=filetypes)
+# Show game details with a back button
+def show_game_details(game):
+    # Clear the frame and display game details
+    for widget in content_frame.winfo_children():
+        widget.destroy()
+
+    # Back button to return to the main launcher
+    back_button = tk.Button(content_frame, text="Back", command=load_games)
+    back_button.pack(anchor="ne", padx=10, pady=10)
+
+    tk.Label(content_frame, text=f"Game: {game['name']}", font=("Arial", 14)).pack(pady=10)
+    
+    # Display release date and description as read-only by default
+    tk.Label(content_frame, text="Release Date:").pack(anchor="w", padx=10)
+    release_date_label = tk.Label(content_frame, text=game["metadata"].get("release_date", "N/A"))
+    release_date_label.pack(anchor="w", padx=10)
+
+    tk.Label(content_frame, text="Description:").pack(anchor="w", padx=10)
+    description_label = tk.Label(content_frame, text=game["metadata"].get("description", "N/A"), wraplength=350, justify="left")
+    description_label.pack(anchor="w", padx=10, pady=5)
+
+    # Button to edit details
+    edit_button = tk.Button(content_frame, text="Edit Details", command=lambda: edit_game_details(game))
+    edit_button.pack(pady=10)
+
+# Edit game details in the same window
+def edit_game_details(game):
+    for widget in content_frame.winfo_children():
+        widget.destroy()
+
+    tk.Label(content_frame, text="Edit Game Details", font=("Arial", 14)).pack(pady=10)
+
+    # Name field
+    tk.Label(content_frame, text="Name:").pack(anchor="w", padx=10)
+    name_entry = tk.Entry(content_frame, width=30)
+    name_entry.insert(0, game["name"])
+    name_entry.pack(padx=10, pady=5)
+
+    # Release Date field
+    tk.Label(content_frame, text="Release Date:").pack(anchor="w", padx=10)
+    release_date_entry = tk.Entry(content_frame, width=30)
+    release_date_entry.insert(0, game["metadata"].get("release_date", ""))
+    release_date_entry.pack(padx=10, pady=5)
+
+    # Description field
+    tk.Label(content_frame, text="Description:").pack(anchor="w", padx=10)
+    description_text = tk.Text(content_frame, width=30, height=4)
+    description_text.insert("1.0", game["metadata"].get("description", ""))
+    description_text.pack(padx=10, pady=5)
+
+    # Save button to save details and go back to the details view
+    save_button = tk.Button(content_frame, text="Save", command=lambda: save_game_details(game, name_entry.get(), release_date_entry.get(), description_text.get("1.0", "end-1c")))
+    save_button.pack(pady=10)
+
+# Function to save edited game details
+def save_game_details(game, new_name, new_release_date, new_description):
+    # Update game details
+    old_name = game["name"]
+    game["name"] = new_name
+    game["metadata"]["release_date"] = new_release_date
+    game["metadata"]["description"] = new_description
+
+    # Rename artwork if necessary
+    if "artwork" in game and game["artwork"]:
+        current_artwork_path = game["artwork"]
+        extension = os.path.splitext(current_artwork_path)[1]
+        new_artwork_name = format_artwork_filename(new_name, extension)
+        new_artwork_path = os.path.join("artwork", new_artwork_name)
+        
+        if os.path.basename(current_artwork_path) != new_artwork_name:
+            os.rename(current_artwork_path, new_artwork_path)
+            game["artwork"] = new_artwork_path
+
+    # Save the updated details to JSON
+    if os.path.exists("games.json"):
+        with open("games.json", "r") as file:
+            data = json.load(file)
+    else:
+        data = {"games": []}
+
+    # Update existing game in JSON
+    for g in data["games"]:
+        if g["path"] == game["path"]:
+            g.update(game)
+            break
+
+    with open("games.json", "w") as file:
+        json.dump(data, file, indent=4)
+
+    print(f"Details updated for game '{game['name']}'")
+    show_game_details(game)  # Go back to the details view after saving
+
+# Function to add artwork to a game
+def add_artwork(game):
+    artwork_path = filedialog.askopenfilename(
+        title="Select Artwork", 
+        filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.gif;*.bmp"), ("All files", "*.*")]
+    )
+    
+    if artwork_path:
+        extension = os.path.splitext(artwork_path)[1]
+        new_artwork_name = format_artwork_filename(game["name"], extension)
+        new_artwork_path = os.path.join("artwork", new_artwork_name)
+        
+        try:
+            img = Image.open(artwork_path)
+            img.verify()
+            shutil.copy(artwork_path, new_artwork_path)
+            game["artwork"] = new_artwork_path
+            
+            # Update the JSON file with the new artwork path
+            with open("games.json", "r") as file:
+                data = json.load(file)
+            
+            for g in data["games"]:
+                if g["path"] == game["path"]:
+                    g["artwork"] = new_artwork_path
+                    break
+            
+            with open("games.json", "w") as file:
+                json.dump(data, file, indent=4)
+
+            print(f"Artwork added for game '{game['name']}'")
+            load_games()  # Refresh to show updated artwork
+        except Exception as e:
+            print(f"Failed to add artwork: {e}. Ensure the file is a valid image.")
+
+# Function to add a new game
+def add_game():
+    game_path = filedialog.askopenfilename(title="Select Game Executable", filetypes=[("Executable files", "*.exe;*.app;*.AppImage"), ("All files", "*.*")])
     
     if game_path:
         if os.path.exists("games.json"):
@@ -121,110 +266,8 @@ def add_game():
         print(f"Game '{new_game['name']}' added successfully!")
         load_games()
 
-# Function to show an options menu for each game
-def show_options_menu(game):
-    options_window = tk.Toplevel(root)
-    options_window.title("Options")
-    options_window.geometry("250x200")
-
-    # Add artwork option
-    add_artwork_button = tk.Button(options_window, text="Add Artwork", command=lambda: add_artwork(game))
-    add_artwork_button.pack(pady=5)
-
-    # Edit Details option
-    edit_details_button = tk.Button(options_window, text="Edit Details", command=lambda: edit_game_details(game))
-    edit_details_button.pack(pady=5)
-
-# Function to edit game details in a single window
-def edit_game_details(game):
-    edit_window = tk.Toplevel(root)
-    edit_window.title("Edit Game Details")
-    edit_window.geometry("300x250")
-
-    # Name field
-    tk.Label(edit_window, text="Name:").pack(anchor="w", padx=10)
-    name_entry = tk.Entry(edit_window, width=30)
-    name_entry.insert(0, game["name"])
-    name_entry.pack(padx=10, pady=5)
-
-    # Release Date field
-    tk.Label(edit_window, text="Release Date:").pack(anchor="w", padx=10)
-    release_date_entry = tk.Entry(edit_window, width=30)
-    release_date_entry.insert(0, game["metadata"].get("release_date", ""))
-    release_date_entry.pack(padx=10, pady=5)
-
-    # Description field
-    tk.Label(edit_window, text="Description:").pack(anchor="w", padx=10)
-    description_text = tk.Text(edit_window, width=30, height=4)
-    description_text.insert("1.0", game["metadata"].get("description", ""))
-    description_text.pack(padx=10, pady=5)
-
-    # Save button
-    save_button = tk.Button(edit_window, text="Save", command=lambda: save_game_details(game, name_entry.get(), release_date_entry.get(), description_text.get("1.0", "end-1c"), edit_window))
-    save_button.pack(pady=10)
-
-# Function to save edited game details
-def save_game_details(game, new_name, new_release_date, new_description, edit_window):
-    # Update game details
-    game["name"] = new_name
-    game["metadata"]["release_date"] = new_release_date
-    game["metadata"]["description"] = new_description
-
-    # Save the updated details to JSON
-    with open("games.json", "r") as file:
-        data = json.load(file)
-    
-    for g in data["games"]:
-        if g["name"] == game["name"]:
-            g.update(game)
-            break
-    
-    with open("games.json", "w") as file:
-        json.dump(data, file, indent=4)
-
-    print(f"Details updated for game '{game['name']}'")
-    edit_window.destroy()  # Close the edit window
-    load_games()  # Refresh to display the updated name
-
-# Function to add artwork to a game
-def add_artwork(game):
-    artwork_path = filedialog.askopenfilename(
-        title="Select Artwork", 
-        filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.gif;*.bmp"), ("All files", "*.*")]
-    )
-    
-    if artwork_path:
-        artwork_filename = os.path.basename(artwork_path)
-        new_artwork_path = os.path.join("artwork", artwork_filename)
-        
-        try:
-            img = Image.open(artwork_path)
-            img.verify()  # Verify the image is intact
-            shutil.copy(artwork_path, new_artwork_path)
-            game["artwork"] = new_artwork_path
-            
-            with open("games.json", "r") as file:
-                data = json.load(file)
-            
-            for g in data["games"]:
-                if g["name"] == game["name"]:
-                    g["artwork"] = new_artwork_path
-                    break
-            
-            with open("games.json", "w") as file:
-                json.dump(data, file, indent=4)
-
-            print(f"Artwork added for game '{game['name']}'")
-            load_games()  # Refresh the game buttons
-        except Exception as e:
-            print(f"Failed to add artwork: {e}. Please ensure the file is a valid image.")
-
-# Add a button for importing games
-import_button = tk.Button(root, text="+", command=add_game)
-import_button.pack(pady=10)
-
-# Load games on startup
+# Initial load of games on startup
 load_games()
 
-# Run the window
+# Run the main loop
 root.mainloop()

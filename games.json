@@ -1,0 +1,31 @@
+{
+    "games": [
+        {
+            "name": "Ikemen_GO.exe",
+            "path": "D:/Games/Ikemen_GO-v0.99.0-windows/Ikemen_GO.exe",
+            "artwork": "",
+            "metadata": {
+                "release_date": "",
+                "description": ""
+            }
+        },
+        {
+            "name": "PCSX2",
+            "path": "D:/Emulation/PCSX2/pcsx2-qt.exe",
+            "artwork": "artwork\\pcsx2.jpg",
+            "metadata": {
+                "release_date": "",
+                "description": "A PS2 Emulator"
+            }
+        },
+        {
+            "name": "Xenia Canary",
+            "path": "D:/Emulation/Xenia/Xenia Canary/xenia_canary.exe",
+            "artwork": "artwork\\xenia_canary.png",
+            "metadata": {
+                "release_date": "2013",
+                "description": "An Expirimental Xbox 360 Emulator"
+            }
+        }
+    ]
+}

@@ -2,6 +2,8 @@
 
 **SnapLaunch** is a cross-platform application and game launcher for organizing and launching your favorite apps and games with ease.
 
+![logo](https://github.com/user-attachments/assets/00cdb1a2-c4db-44f3-a3b5-6cd982da44ec)
+
 ## Features
 
 - **Cross-Platform Support**: Designed for Windows and Linux (macOS support planned).

@@ -1,2 +1,4 @@
 artwork/
+build/
+dist/
 games.json

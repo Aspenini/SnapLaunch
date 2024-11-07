@@ -15,7 +15,7 @@ if not os.path.exists("artwork_archive"):
 
 # Create the main window
 root = tk.Tk()
-root.title("Game Launcher")
+root.title("SnapLaunch")
 root.geometry("600x400")
 
 # Main frame that will change content based on selection
